@@ -91,9 +91,12 @@ jobs:
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
-      - name: 🔐 Prepare Service Account Key
+      - name: 🔐 Configure YC CLI profile
         run: |
           echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}' > $HOME/key.json
+          $HOME/yandex-cloud/bin/yc config profile create sa-ci
+          $HOME/yandex-cloud/bin/yc config set service-account-key $HOME/key.json
+          $HOME/yandex-cloud/bin/yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
 
       - name: 🚀 Deploy to Yandex Serverless Containers from GHCR
         run: |
@@ -103,7 +106,5 @@ jobs:
             --cores 1 \
             --memory 512MB \
             --execution-timeout 30s \
-            --folder-id ${{ secrets.YC_FOLDER_ID }} \
-            --service-account-id ${{ secrets.YC_SERVICE_ACCOUNT_ID }} \
-            --sa-key-file $HOME/key.json
+            --service-account-id ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           rm -f $HOME/key.json
