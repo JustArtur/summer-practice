@@ -6,6 +6,7 @@
 
 ```
 practice-mnist/
+├── models/                # Модели
 ├── data/                  # Данные (автоскачивание при первом запуске)
 ├── notebooks/             # Jupyter ноутбуки
 ├── src/                   # Исходный код (data_loader, model, train, evaluate)

@@ -31,7 +31,6 @@ def _download_file(url: str, destination_path: str) -> None:
 
 
 def download_mnist(dataset_directory: str) -> None:
-    """Download MNIST gz files if they do not exist."""
     ensure_directory_exists(dataset_directory)
     for filename in FILES.values():
         url = MNIST_BASE_URL + filename

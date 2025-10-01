@@ -1,0 +1,13 @@
+.git
+.gitignore
+venv/
+.vscode/
+.idea/
+.DS_Store
+notebooks/
+data/
+tests/
+.pytest_cache/
+.github/
+README.md
+*.md

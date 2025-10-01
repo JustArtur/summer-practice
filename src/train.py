@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 from typing import Dict
@@ -9,31 +8,25 @@ from sklearn.metrics import accuracy_score
 from src.data_loader import get_datasets, ensure_directory_exists
 from src.model import create_mnist_model
 
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train MNIST model (lightweight)")
-    parser.add_argument("--data-dir", type=str, default="./data", help="Dataset directory")
-    parser.add_argument("--save-dir", type=str, default="./artifacts", help="Artifacts directory")
-    parser.add_argument("--epochs", type=int, default=1, help="Training epochs (passes over data)")
-    parser.add_argument("--train-subset", type=int, default=5000, help="Number of train samples to use")
-    parser.add_argument("--test-subset", type=int, default=1000, help="Number of test samples to use for quick eval")
-    parser.add_argument("--random-state", type=int, default=42, help="Random seed")
-    return parser.parse_args()
+DATA_DIR = "./data"
+MODELS_DIR = "./models"
+EPOCHS = 1
+TRAIN_SUBSET = 1000  # Маленький датасет для быстрого прогона CI
+TEST_SUBSET = 200    # Маленький датасет для быстрого прогона CI
+RANDOM_STATE = 42
 
 
 def train() -> Dict[str, float]:
-    args = parse_args()
-
-    ensure_directory_exists(args.save_dir)
+    ensure_directory_exists(MODELS_DIR)
 
     x_train, y_train, x_test, y_test = get_datasets(
-        dataset_directory=args.data_dir,
-        train_subset=args.train_subset,
-        test_subset=args.test_subset,
-        random_state=args.random_state,
+        dataset_directory=DATA_DIR,
+        train_subset=TRAIN_SUBSET,
+        test_subset=TEST_SUBSET,
+        random_state=RANDOM_STATE,
     )
 
-    model = create_mnist_model(max_epochs=args.epochs, random_state=args.random_state)
+    model = create_mnist_model(max_epochs=EPOCHS, random_state=RANDOM_STATE)
     model.fit(x_train, y_train)
 
     train_pred = model.predict(x_train)
@@ -42,7 +35,7 @@ def train() -> Dict[str, float]:
     train_acc = float(accuracy_score(y_train, train_pred))
     test_acc = float(accuracy_score(y_test, test_pred))
 
-    model_path = os.path.join(args.save_dir, "model.joblib")
+    model_path = os.path.join(MODELS_DIR, "model.joblib")
     joblib.dump(model, model_path)
 
     metrics = {
@@ -50,13 +43,14 @@ def train() -> Dict[str, float]:
         "test_accuracy": test_acc,
         "train_samples": int(x_train.shape[0]),
         "test_samples": int(x_test.shape[0]),
-        "epochs": int(args.epochs),
+        "epochs": int(EPOCHS),
     }
 
-    metrics_path = os.path.join(args.save_dir, "metrics.json")
+    metrics_path = os.path.join(MODELS_DIR, "metrics.json")
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
 
+    print("Результаты обучения:")
     print(json.dumps(metrics, indent=2))
     return metrics
 
