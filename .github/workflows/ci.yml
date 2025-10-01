@@ -1,110 +1,127 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ main ]
-
-permissions:
-  contents: read
-  packages: write
+    branches:
+      - main
+      - develop
+  workflow_dispatch: 
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
-    env:
-      PYTHONPATH: ${{ github.workspace }}
-    steps:
-      - name: 🔄 Checkout репозитория
-        uses: actions/checkout@v3
 
-      - name: 🐍 Установка Python
-        uses: actions/setup-python@v4
+    steps:
+      - name: Проверка кода
+        uses: actions/checkout@v4
+
+      - name: Настройка Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: 📦 Установка зависимостей
+      - name: Установка зависимостей
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 🧹 Проверка кода (flake8)
+      - name: Запуск тестов
+        env:
+          PYTHONPATH: .
         run: |
-          pip install flake8
-          flake8 src tests
+          pytest tests/test_data_loader.py -v
+          pytest tests/test_model.py -v
 
-      - name: 🧪 Запуск тестов (pytest)
+      - name: Обучение модели для Docker образа
+        env:
+          PYTHONPATH: .
         run: |
-          pip install pytest
-          pytest -s tests
+          python src/train.py
 
-      - name: 🤖 Обучение модели (src/train.py)
-        run: python -m src.train
-
-      - name: 📦 Загрузка модели как артефакта
+      - name: Сохранение обученной модели как артефакт
         uses: actions/upload-artifact@v4
         with:
-          name: model
-          path: models/
+          name: trained-model
+          path: |
+            models/model.joblib
+            models/metrics.json
+          retention-days: 7
 
-      - name: 🔮 Оценка модели (src/evaluate.py)
-        run: python -m src.evaluate
-
-  publish:
-    name: Build & Push Docker image to GHCR
+  publish-to-ghcr:
+    needs: build-and-test
     runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
     steps:
-      - name: 🔄 Checkout репозитория
-        uses: actions/checkout@v3
+      - name: Проверка кода
+        uses: actions/checkout@v4
 
-      - name: 📥 Download model artifact
+      - name: Скачивание обученной модели
         uses: actions/download-artifact@v4
         with:
-          name: model
-          path: models
+          name: trained-model
+          path: models/
 
-      - name: 🔐 Log in to GitHub Container Registry
+      - name: Login to GHCR
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🐳 Build and push Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          tags: ghcr.io/justartur/summer-practice:latest
+          tags: ghcr.io/${{ github.repository_owner }}/practice-mnist:latest
 
-  deploy-yandex:
-    name: Deploy to Yandex Cloud
+  push-to-yandex:
+    needs: publish-to-ghcr
     runs-on: ubuntu-latest
-    needs: publish
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
     steps:
-      - name: 🔧 Install Yandex Cloud CLI
-        run: |
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+      - name: Проверка кода
+        uses: actions/checkout@v4
 
-      - name: 🔐 Configure YC CLI profile
-        run: |
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}' > $HOME/key.json
-          $HOME/yandex-cloud/bin/yc config profile create sa-ci
-          $HOME/yandex-cloud/bin/yc config set service-account-key $HOME/key.json
-          $HOME/yandex-cloud/bin/yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
+      - name: Скачивание обученной модели
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: models/
 
-      - name: 🚀 Deploy to Yandex Serverless Containers from GHCR
+      - name: Login to Yandex Cloud Container Registry
+        id: login-cr
+        uses: yc-actions/yc-cr-login@v3
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Build, tag, and push image to Yandex Cloud Container Registry
+        env:
+          CR_REGISTRY: crpek9vi58d1lmm663n1
+          CR_REPOSITORY: summer-practice-2025
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          $HOME/yandex-cloud/bin/yc serverless container revision deploy \
-            --container-name ${{ secrets.YC_CONTAINER_NAME }} \
-            --image ghcr.io/justartur/summer-practice:latest \
-            --cores 1 \
-            --memory 512MB \
-            --execution-timeout 30s \
-            --service-account-id ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-          rm -f $HOME/key.json
+          docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:practice-mnist-$IMAGE_TAG .
+          docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:practice-mnist-$IMAGE_TAG
+        
+      - name: Deploy Serverless Container
+        id: deploy-sls-container
+        uses: yc-actions/yc-sls-container-deploy@v1
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+          container-name: practice-mnist
+          folder-id: b1gs75gl4nvo4al5ng81
+          revision-service-account-id: ajemvc7i0rvj01a4899b
+          revision-cores: 1
+          revision-memory: 512Mb
+          revision-core-fraction: 100
+          revision-concurrency: 8
+          revision-image-url: cr.yandex/crpek9vi58d1lmm663n1/summer-practice-2025:practice-mnist-${{ github.sha }}
+          revision-execution-timeout: 10
+
