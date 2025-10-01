@@ -86,10 +86,18 @@ jobs:
     needs: publish
     if: github.ref == 'refs/heads/main'
     steps:
+      - name: 🔧 Install Yandex Cloud CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+
       - name: 🔐 Authenticate to Yandex Cloud
-        uses: yc-actions/yc-sa-install@v1
-        with:
-          service-account-key: ${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}
+        run: |
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}' > key.json
+          yc config profile create sa-profile
+          yc config set service-account-key key.json
+          yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
+          rm key.json
 
       - name: 🚀 Deploy to Yandex Serverless Containers from GHCR
         run: |
@@ -99,5 +107,4 @@ jobs:
             --cores 1 \
             --memory 512MB \
             --execution-timeout 30s \
-            --folder-id ${{ secrets.YC_FOLDER_ID }} \
             --service-account-id ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
