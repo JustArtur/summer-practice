@@ -78,4 +78,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/just_artur/practice_mnist:latest
+          tags: ghcr.io/justartur/summer-practice/:latest
