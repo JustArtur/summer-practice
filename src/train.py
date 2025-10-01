@@ -56,4 +56,4 @@ def train() -> Dict[str, float]:
 
 
 if __name__ == "__main__":
-    train() 
+    train()

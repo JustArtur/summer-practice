@@ -15,13 +15,13 @@ RANDOM_STATE = 42
 
 def evaluate() -> float:
     model_path = os.path.join(MODELS_DIR, MODEL_FILENAME)
-    
+
     print(f"Оцениваем модель: {model_path}")
-    
+
     # Проверяем наличие модели
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Модель не найдена: {model_path}")
-    
+
     _, _, x_test, y_test = get_datasets(
         dataset_directory=DATA_DIR,
         train_subset=None,
@@ -34,15 +34,15 @@ def evaluate() -> float:
     acc = float(accuracy_score(y_test, y_pred))
 
     result = {
-        "test_accuracy": acc, 
+        "test_accuracy": acc,
         "test_samples": int(x_test.shape[0]),
         "model_path": model_path
     }
-    
+
     print("Результаты оценки:")
     print(json.dumps(result, indent=2))
     return acc
 
 
 if __name__ == "__main__":
-    evaluate() 
+    evaluate()

@@ -48,7 +48,9 @@ def _read_idx_images(gz_path: str) -> np.ndarray:
     if magic != 2051:
         raise ValueError(f"Unexpected magic {magic} in images file {gz_path}")
     image_data = np.frombuffer(buffer.read(), dtype=np.uint8)
-    images = image_data.reshape(num_images, num_rows * num_cols).astype(np.float32) / 255.0
+    images = image_data.reshape(
+        num_images, num_rows * num_cols
+    ).astype(np.float32) / 255.0
     return images
 
 
@@ -63,7 +65,9 @@ def _read_idx_labels(gz_path: str) -> np.ndarray:
     return labels
 
 
-def load_mnist(dataset_directory: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def load_mnist(
+    dataset_directory: str
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Load MNIST from local gz files, downloading if needed."""
     download_mnist(dataset_directory)
     train_images_path = os.path.join(dataset_directory, FILES["train_images"])
@@ -99,4 +103,4 @@ def get_datasets(
         x_test = x_test[indices]
         y_test = y_test[indices]
 
-    return x_train, y_train, x_test, y_test 
+    return x_train, y_train, x_test, y_test

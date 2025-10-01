@@ -11,7 +11,10 @@ def test_pipeline_trains_and_predicts(tmp_path):
     ensure_directory_exists(data_dir)
 
     x_train, y_train, x_test, y_test = get_datasets(
-        dataset_directory=str(data_dir), train_subset=1000, test_subset=300, random_state=0
+        dataset_directory=str(data_dir),
+        train_subset=1000,
+        test_subset=300,
+        random_state=0
     )
 
     model = create_mnist_model(max_epochs=1, random_state=0)
@@ -21,4 +24,4 @@ def test_pipeline_trains_and_predicts(tmp_path):
     acc = accuracy_score(y_test, preds)
 
     assert preds.shape[0] == x_test.shape[0]
-    assert 0.0 <= acc <= 1.0 
+    assert 0.0 <= acc <= 1.0
