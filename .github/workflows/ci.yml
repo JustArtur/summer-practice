@@ -106,12 +106,12 @@ jobs:
 
       - name: Build, tag, and push image to Yandex Cloud Container Registry
         env:
-          CR_REGISTRY: crpek9vi58d1lmm663n1
-          CR_REPOSITORY: summer-practice-2025
+          CR_REGISTRY: crph7ltnpn7vkfrv3s05
+          CR_REPOSITORY: practice-mnist
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:practice-mnist-$IMAGE_TAG .
-          docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:practice-mnist-$IMAGE_TAG
+          docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG .
+          docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG
         
       - name: Deploy Serverless Container
         id: deploy-sls-container
@@ -119,12 +119,12 @@ jobs:
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
           container-name: practice-mnist
-          folder-id: b1gs75gl4nvo4al5ng81
-          revision-service-account-id: ajemvc7i0rvj01a4899b
+          folder-id: b1g7ha36oknp715bs5dr
+          revision-service-account-id: aje3flort26n56k6q2vc
           revision-cores: 1
           revision-memory: 512Mb
           revision-core-fraction: 100
           revision-concurrency: 8
-          revision-image-url: cr.yandex/crpek9vi58d1lmm663n1/summer-practice-2025:practice-mnist-${{ github.sha }}
+          revision-image-url: cr.yandex/crph7ltnpn7vkfrv3s05/practice-mnist:${{ github.sha }}
           revision-execution-timeout: 10
 
