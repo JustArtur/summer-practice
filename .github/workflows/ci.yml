@@ -120,6 +120,7 @@ jobs:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
           container-name: practice-mnist
           folder-id: b1g7ha36oknp715bs5dr
+          revision-service-account-id: aje3flort26n56k6q2vc
           revision-cores: 1
           revision-memory: 512Mb
           revision-core-fraction: 100
