@@ -89,7 +89,7 @@ def get_datasets(
     random_state: int = 42,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Return flattened, normalized MNIST datasets.
-    
+
     With optional subsampling.
     """
     x_train, y_train, x_test, y_test = load_mnist(dataset_directory)
