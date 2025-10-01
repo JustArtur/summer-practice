@@ -91,22 +91,19 @@ jobs:
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
-      - name: 🔐 Authenticate to Yandex Cloud
+      - name: 🔐 Prepare Service Account Key
         run: |
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}' > key.json
-          export YC_SERVICE_ACCOUNT_KEY_FILE=key.json
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}' > $HOME/key.json
 
       - name: 🚀 Deploy to Yandex Serverless Containers from GHCR
-        env:
-          YC_SERVICE_ACCOUNT_KEY_FILE: key.json
         run: |
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}' > key.json
-          yc serverless container revision deploy \
+          $HOME/yandex-cloud/bin/yc serverless container revision deploy \
             --container-name ${{ secrets.YC_CONTAINER_NAME }} \
             --image ghcr.io/justartur/summer-practice:latest \
             --cores 1 \
             --memory 512MB \
             --execution-timeout 30s \
             --folder-id ${{ secrets.YC_FOLDER_ID }} \
-            --service-account-id ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-          rm -f key.json
+            --service-account-id ${{ secrets.YC_SERVICE_ACCOUNT_ID }} \
+            --sa-key-file $HOME/key.json
+          rm -f $HOME/key.json
